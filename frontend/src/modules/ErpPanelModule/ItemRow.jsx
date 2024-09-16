@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Input, InputNumber, Row, Col } from 'antd';
-
 import { DeleteOutlined } from '@ant-design/icons';
-import { useMoney, useDate } from '@/settings';
+import { useMoney } from '@/settings';
 import calculate from '@/utils/calculate';
 
 export default function ItemRow({ field, remove, current = null }) {
@@ -11,32 +10,27 @@ export default function ItemRow({ field, remove, current = null }) {
   const [quantity, setQuantity] = useState(0);
 
   const money = useMoney();
+
   const updateQt = (value) => {
     setQuantity(value);
   };
+
   const updatePrice = (value) => {
     setPrice(value);
   };
 
   useEffect(() => {
     if (current) {
-      // When it accesses the /payment/ endpoint,
-      // it receives an invoice.item instead of just item
-      // and breaks the code, but now we can check if items exists,
-      // and if it doesn't we can access invoice.items.
-
       const { items, invoice } = current;
 
       if (invoice) {
         const item = invoice[field.fieldKey];
-
         if (item) {
           setQuantity(item.quantity);
           setPrice(item.price);
         }
       } else {
         const item = items[field.fieldKey];
-
         if (item) {
           setQuantity(item.quantity);
           setPrice(item.price);
@@ -47,7 +41,6 @@ export default function ItemRow({ field, remove, current = null }) {
 
   useEffect(() => {
     const currentTotal = calculate.multiply(price, quantity);
-
     setTotal(currentTotal);
   }, [price, quantity]);
 
@@ -59,11 +52,11 @@ export default function ItemRow({ field, remove, current = null }) {
           rules={[
             {
               required: true,
-              message: 'Missing itemName name',
+              message: 'Missing item name',
             },
             {
-              pattern: /^(?!\s*$)[\s\S]+$/, // Regular expression to allow spaces, alphanumeric, and special characters, but not just spaces
-              message: 'Item Name must contain alphanumeric or special characters',
+              pattern: /^(?!\s*$).+/, // Regular expression to ensure at least one non-whitespace character
+              message: 'Item Name must contain at least one non-space character',
             },
           ]}
         >
@@ -72,12 +65,18 @@ export default function ItemRow({ field, remove, current = null }) {
       </Col>
       <Col className="gutter-row" span={7}>
         <Form.Item name={[field.name, 'description']}>
-          <Input placeholder="description Name" />
+          <Input placeholder="Description" />
         </Form.Item>
       </Col>
       <Col className="gutter-row" span={3}>
         <Form.Item name={[field.name, 'quantity']} rules={[{ required: true }]}>
-          <InputNumber style={{ width: '100%' }} min={0} onChange={updateQt} />
+          <InputNumber
+            style={{ width: '100%' }}
+            min={1}
+            step={1} // Ensure only whole numbers are allowed
+            onChange={updateQt}
+            parser={(value) => Math.max(1, parseFloat(value))} 
+          />
         </Form.Item>
       </Col>
       <Col className="gutter-row" span={4}>
@@ -111,7 +110,7 @@ export default function ItemRow({ field, remove, current = null }) {
         </Form.Item>
       </Col>
 
-      <div style={{ position: 'absolute', right: '-20px', top: ' 5px' }}>
+      <div style={{ position: 'absolute', right: '-20px', top: '5px' }}>
         <DeleteOutlined onClick={() => remove(field.name)} />
       </div>
     </Row>
